@@ -84,7 +84,7 @@ export default async function CategoryPage({ params }: Props) {
           <div className="flex items-center gap-4">
             <span className="text-5xl">{meta.emoji}</span>
             <div>
-              <h1 className="text-3xl font-black">{meta.meta ? meta.meta.title : meta.title}</h1>
+              <h1 className="text-3xl font-black">{meta.title}</h1>
               <p className="text-green-100 mt-1 max-w-xl text-sm">{meta.description}</p>
             </div>
           </div>
