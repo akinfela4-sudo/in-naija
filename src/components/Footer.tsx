@@ -1,20 +1,20 @@
-"use client";
-
 import Link from "next/link";
-import { Globe, Users, Info } from "lucide-react";
+import { Globe, Users, Newspaper, Info } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="bg-zinc-50 border-t mt-auto">
-      <div className="container mx-auto px-6 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
-          {/* Brand */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold tracking-tighter bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">
-              IN-NAIJA
-            </h2>
+    <footer className="w-full border-t bg-muted/30 pt-12 pb-8">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+          {/* Brand and About */}
+          <div className="col-span-1 md:col-span-1">
+            <Link href="/" className="flex items-center space-x-2 mb-4">
+              <span className="text-xl font-bold tracking-tighter text-green-800">
+                IN-NAIJA
+              </span>
+            </Link>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Nigeria's first AI-automated news platform. delivering zero-plagiarism, 
+              Nigeria's #1 AI-powered news platform. Delivering verified, 
               localized, and trending stories in Standard English and Pidgin.
             </p>
             <div className="flex space-x-4 mt-6">
@@ -36,7 +36,7 @@ export default function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/about" className="hover:text-green-600">About Us</Link></li>
               <li><Link href="/newsroom" className="hover:text-green-600">Newsroom</Link></li>
-              <li><Link href="/elections" className="hover:text-green-600">Election Hub</Link></li>
+              <li><Link href="/category/trending" className="hover:text-green-600">Trending News</Link></li>
               <li><Link href="/advertise" className="hover:text-green-600">Advertise</Link></li>
             </ul>
           </div>
@@ -45,10 +45,9 @@ export default function Footer() {
           <div>
             <h3 className="font-semibold text-sm uppercase tracking-wider mb-4">Categories</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link href="/category/politics" className="hover:text-green-600">Politics</Link></li>
-              <li><Link href="/category/entertainment" className="hover:text-green-600">Entertainment</Link></li>
-              <li><Link href="/category/tech" className="hover:text-green-600">Technology</Link></li>
-              <li><Link href="/category/sports" className="hover:text-green-600">Sports</Link></li>
+              <li><Link href="/category/politics" className="hover:text-green-600">Politics & Power</Link></li>
+              <li><Link href="/category/trending" className="hover:text-green-600">Naija Pulse (Trending)</Link></li>
+              <li><Link href="/category/business" className="hover:text-green-600">Business & Economy</Link></li>
             </ul>
           </div>
 
@@ -72,7 +71,7 @@ export default function Footer() {
         </div>
 
         <div className="pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} In-Naija Media. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} In-Naija Media. All rights reserved.</p>
           <div className="flex gap-6">
             <Link href="/privacy" className="hover:text-green-600">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-green-600">Terms of Service</Link>

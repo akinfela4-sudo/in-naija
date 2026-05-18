@@ -14,34 +14,19 @@ export const dynamic = "force-dynamic";
 // Category config with SEO-friendly descriptions
 const CATEGORY_META: Record<string, { title: string; description: string; emoji: string }> = {
   politics: {
-    title: "Nigerian Politics",
-    description: "Breaking political news, government policy, INEC updates, and party analysis from across Nigeria.",
+    title: "Politics & Power",
+    description: "What’s happening in the presidency, national assembly, state government policies, and major political shakeups.",
     emoji: "🏛️",
+  },
+  trending: {
+    title: "Naija Pulse (Trending)",
+    description: "High-engagement news—viral social media trends, entertainment, music, and pop culture updates.",
+    emoji: "🔥",
   },
   business: {
     title: "Business & Economy",
-    description: "Naira exchange rates, CBN policy, stock market, and Nigerian business news.",
+    description: "Fuel prices, currency rates (Dollar/Naira tracking), inflation updates, and things affecting the daily cost of living.",
     emoji: "📈",
-  },
-  entertainment: {
-    title: "Entertainment",
-    description: "Nollywood, Afrobeats, celebrity news, and Nigerian pop culture.",
-    emoji: "🎬",
-  },
-  tech: {
-    title: "Technology",
-    description: "Nigerian tech startups, funding rounds, fintech, and innovation news.",
-    emoji: "💻",
-  },
-  sports: {
-    title: "Sports",
-    description: "Super Eagles, NPFL, NBA Nigeria, and all Nigerian sports coverage.",
-    emoji: "⚽",
-  },
-  trending: {
-    title: "Trending in Nigeria",
-    description: "The most-read and most-shared stories in Nigeria right now.",
-    emoji: "🔥",
   },
 };
 

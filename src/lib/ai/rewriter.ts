@@ -41,7 +41,7 @@ Output ONLY valid JSON with this exact schema:
   "title_pidgin": "Pidgin headline that grabs attention (max 90 chars)",
   "content_pidgin": "Full article in authentic Nigerian Pidgin English. Use phrases like 'e don happen', 'as e dey go', 'oya', 'wahala', 'oga', 'naija', 'dem', 'e be like say'. Keep it natural, not forced. 3-4 paragraphs.",
   "slug": "url-friendly-slug-from-title-max-60-chars",
-  "category_slug": "Must be one of: politics, business, entertainment, tech, sports, trending",
+  "category_slug": "Must be one of: politics, business, trending",
   "summary": "One sentence summary for social media sharing (max 140 chars)"
 }`,
       },

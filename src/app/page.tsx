@@ -1,190 +1,189 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { 
-  TrendingUp, 
-  Clock, 
-  ArrowRight, 
-  Zap, 
-  BarChart3, 
-  MessageSquare,
-  ShieldCheck
-} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { TrendingUp, Clock, ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
+// Export page config
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  // 1. Fetch Featured Story
-  const { data: featured } = await supabase
+  // Fetch live published articles
+  const { data: articles, error } = await supabase
     .from("articles")
-    .select("*")
+    .select("id, title_en, title_pidgin, slug, category_slug, thumbnail_url, created_at, views_count, is_breaking, content_en")
     .eq("status", "published")
     .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
+    .limit(10);
 
-  // 2. Fetch Latest Headlines
-  const { data: latest } = await supabase
-    .from("articles")
-    .select("*")
-    .eq("status", "published")
-    .order("created_at", { ascending: false })
-    .limit(6);
+  const safeArticles = articles || [];
+
+  // Pick featured (latest) and trending (by views)
+  const featuredNews = safeArticles[0] || {
+    title_en: "No published articles yet",
+    category_slug: "updates",
+    created_at: new Date().toISOString(),
+    thumbnail_url: "https://images.unsplash.com/photo-1518458084722-6a3976c33c40?auto=format&fit=crop&q=80&w=800",
+    content_en: "Run a scan from the admin dashboard to populate the newsroom...",
+    slug: "#",
+  };
+
+  const trendingStories = [...safeArticles]
+    .sort((a, b) => b.views_count - a.views_count)
+    .slice(1, 5);
+
+  const politicsStories = safeArticles
+    .filter(a => a.category_slug === 'politics')
+    .slice(0, 2);
+
+  // If no politics, just show next latest
+  const bottomStories = politicsStories.length > 0 ? politicsStories : safeArticles.slice(1, 3);
 
   const timeAgo = (iso: string) => {
     const diff = Date.now() - new Date(iso).getTime();
     const hrs = Math.floor(diff / 3600000);
     if (hrs < 1) return "Just now";
-    if (hrs < 24) return `${hrs}h ago`;
-    return `${Math.floor(hrs / 24)}d ago`;
+    if (hrs < 24) return `${hrs} hours ago`;
+    return `${Math.floor(hrs / 24)} days ago`;
   };
 
-  return (
-    <div className="min-h-screen bg-zinc-50">
-      {/* Hero Section */}
-      <section className="bg-white border-b overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-green-50/50 skew-x-12 translate-x-24 hidden lg:block" />
-        <div className="container mx-auto px-6 py-12 lg:py-20 flex flex-col lg:flex-row gap-12 items-center relative">
-          <div className="lg:w-1/2 space-y-6">
-            <Badge className="bg-green-100 text-green-800 border-green-200 px-3 py-1 text-xs font-bold uppercase tracking-wider">
-              <Zap className="h-3 w-3 mr-1.5 fill-green-600 text-green-600" />
-              AI-Automated News Platform
-            </Badge>
-            <h1 className="text-4xl lg:text-6xl font-black text-zinc-900 leading-[1.1] tracking-tight">
-              Nigeria's News, <br />
-              <span className="text-green-700">Intelligently Refined.</span>
-            </h1>
-            <p className="text-lg text-zinc-600 max-w-lg leading-relaxed">
-              Experience zero-plagiarism news localized in Standard English and Pidgin. Powered by AI, verified by journalists.
-            </p>
-            <div className="flex flex-wrap gap-4 pt-2">
-              <Button size="lg" className="bg-green-700 hover:bg-green-800 text-white rounded-full px-8 font-bold shadow-lg shadow-green-900/20" asChild>
-                <Link href="/category/trending">Read Headlines <ArrowRight className="ml-2 h-4 w-4" /></Link>
-              </Button>
-              <Button size="lg" variant="outline" className="rounded-full px-8 font-bold border-2" asChild>
-                <Link href="/elections">Election Map</Link>
-              </Button>
-            </div>
-            
-            <div className="flex items-center gap-6 pt-4 text-zinc-400">
-               <div className="flex items-center gap-2">
-                 <ShieldCheck className="h-5 w-5 text-green-600" />
-                 <span className="text-xs font-medium uppercase tracking-widest">Verified Sources</span>
-               </div>
-               <div className="flex items-center gap-2">
-                 <MessageSquare className="h-5 w-5 text-green-600" />
-                 <span className="text-xs font-medium uppercase tracking-widest">Pidgin Ready</span>
-               </div>
-            </div>
-          </div>
+  const breakingNews = safeArticles.find(a => a.is_breaking) || safeArticles[0];
 
-          {/* Featured Article Card */}
-          <div className="lg:w-1/2 w-full">
-            {featured ? (
-              <Link href={`/news/${featured.slug}`} className="group block">
-                <div className="relative aspect-[16/10] rounded-3xl overflow-hidden shadow-2xl bg-zinc-200">
-                  {featured.thumbnail_url && (
+  return (
+    <div className="flex flex-col gap-8 pb-12">
+      {/* Breaking News Ticker */}
+      {breakingNews && (
+        <div className="bg-green-50 border-y py-2 overflow-hidden">
+          <div className="container mx-auto px-4 flex items-center gap-4">
+            <Badge className="bg-red-600 animate-pulse shrink-0">BREAKING</Badge>
+            <p className="text-sm font-medium truncate">
+              {breakingNews.title_en}
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* Main Content Area */}
+          <main className="lg:col-span-8 space-y-8">
+            
+            {/* Featured Story */}
+            <section>
+              <Link href={featuredNews.slug === '#' ? '#' : `/news/${featuredNews.slug}`}>
+                <Card className="overflow-hidden border-none shadow-xl group cursor-pointer">
+                  <div className="relative aspect-video">
                     <img 
-                      src={featured.thumbnail_url} 
-                      alt={featured.title_en}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      src={featuredNews.thumbnail_url || "https://images.unsplash.com/photo-1518458084722-6a3976c33c40?auto=format&fit=crop&q=80&w=800"} 
+                      alt="Featured" 
+                      className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
                     />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-                  <div className="absolute bottom-0 left-0 p-8 space-y-3">
-                    <Badge className="bg-green-600 text-white border-none">{featured.category_slug || 'Breaking'}</Badge>
-                    <h2 className="text-2xl lg:text-3xl font-bold text-white leading-tight group-hover:text-green-300 transition-colors">
-                      {featured.title_en}
-                    </h2>
-                    <div className="flex items-center gap-4 text-zinc-300 text-sm">
-                      <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {timeAgo(featured.created_at)}</span>
-                      <span className="flex items-center gap-1.5"><TrendingUp className="h-4 w-4" /> {featured.views_count || 0} reads</span>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <div className="absolute bottom-0 p-6 text-white">
+                      <Badge className="mb-3 bg-green-600 capitalize">{featuredNews.category_slug || 'General'}</Badge>
+                      <h2 className="text-2xl md:text-4xl font-bold mb-3 leading-tight">
+                        {featuredNews.title_en}
+                      </h2>
+                      <p className="text-zinc-200 line-clamp-2 text-sm md:text-base mb-4">
+                        {featuredNews.content_en?.substring(0, 150)}...
+                      </p>
+                      <div className="flex items-center gap-4 text-xs">
+                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {timeAgo(featuredNews.created_at)}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </Card>
               </Link>
-            ) : (
-              <div className="aspect-[16/10] rounded-3xl bg-zinc-100 animate-pulse border-2 border-dashed border-zinc-200 flex items-center justify-center">
-                <p className="text-zinc-400 font-medium italic">Connecting to Newsroom...</p>
+            </section>
+
+            {/* Bottom Stories Section */}
+            <section>
+              <div className="flex items-center justify-between mb-4 border-b pb-2">
+                <h3 className="text-xl font-bold text-green-800">Politics & Power</h3>
+                <Link href="/category/politics" className="text-sm text-muted-foreground hover:text-green-600 flex items-center gap-1">
+                  View All <ArrowRight className="h-3 w-3" />
+                </Link>
               </div>
-            )}
-          </div>
-        </div>
-      </section>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {bottomStories.map((story) => (
+                  <Link href={`/news/${story.slug}`} key={story.id}>
+                    <Card className="flex flex-col border-none shadow-md overflow-hidden hover:shadow-lg transition-shadow h-full">
+                      <div className="aspect-video bg-muted relative">
+                         {story.thumbnail_url && <img src={story.thumbnail_url} className="w-full h-full object-cover" alt="" />}
+                      </div>
+                      <CardContent className="p-4">
+                        <Badge variant="outline" className="mb-2 capitalize">{story.category_slug || 'Update'}</Badge>
+                        <h4 className="font-bold leading-tight mb-2 hover:text-green-700 cursor-pointer">
+                          {story.title_en}
+                        </h4>
+                        <p className="text-xs text-muted-foreground">{timeAgo(story.created_at)}</p>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          </main>
 
-      {/* Latest News Grid */}
-      <section className="container mx-auto px-6 py-16">
-        <div className="flex items-center justify-between mb-10">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-black text-zinc-900 tracking-tight flex items-center gap-2">
-              <TrendingUp className="h-6 w-6 text-green-600" />
-              Latest Headlines
-            </h2>
-            <p className="text-sm text-zinc-500">Fresh updates from across Nigeria, updated every 30 minutes.</p>
-          </div>
-          <Link href="/category/trending" className="text-sm font-bold text-green-700 hover:underline flex items-center gap-1">
-            View All News <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {latest && latest.map((article) => (
-            <Link key={article.id} href={`/news/${article.slug}`} className="group">
-              <article className="space-y-4">
-                <div className="relative aspect-video rounded-2xl overflow-hidden bg-zinc-200 shadow-sm">
-                  {article.thumbnail_url && (
-                    <img 
-                      src={article.thumbnail_url} 
-                      alt=""
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                  )}
-                  <div className="absolute top-3 left-3">
-                    <Badge className="bg-black/50 backdrop-blur text-white border-none capitalize">{article.category_slug}</Badge>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-lg font-bold leading-snug text-zinc-900 group-hover:text-green-700 transition-colors line-clamp-2">
-                    {article.title_en}
-                  </h3>
-                  <div className="flex items-center gap-3 text-xs text-zinc-500">
-                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {timeAgo(article.created_at)}</span>
-                    <span className="w-1 h-1 rounded-full bg-zinc-300" />
-                    <span>{article.views_count || 0} views</span>
-                  </div>
-                </div>
-              </article>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* Election Intelligence Hub Promo */}
-      <section className="bg-zinc-900 text-white overflow-hidden">
-        <div className="container mx-auto px-6 py-20 relative">
-          <div className="max-w-2xl space-y-6 relative z-10">
-            <h2 className="text-3xl lg:text-4xl font-black leading-tight">
-              Nigeria's #1 <br />
-              <span className="text-green-500 underline decoration-green-500/30 underline-offset-8">Election Intelligence Hub</span>
-            </h2>
-            <p className="text-zinc-400 text-lg leading-relaxed">
-              Track results, compare candidates, and analyze live polling data from all 36 states plus the FCT. Real-time visualization of the Nigerian political landscape.
-            </p>
-            <div className="flex flex-wrap gap-4 pt-4">
-              <Button className="bg-white text-zinc-900 hover:bg-zinc-100 rounded-full px-8 font-bold gap-2" asChild>
-                <Link href="/elections"><BarChart3 className="h-4 w-4" /> Live Election Map</Link>
-              </Button>
-              <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 rounded-full px-8 font-bold" asChild>
-                <Link href="/polls">View Public Polls</Link>
-              </Button>
+          {/* Sidebar Area */}
+          <aside className="lg:col-span-4 space-y-8">
+            
+            {/* Ad Slot Top */}
+            <div className="w-full h-64 bg-zinc-100 flex items-center justify-center border border-dashed rounded-lg border-zinc-300">
+              <span className="text-xs font-medium text-zinc-400 uppercase tracking-widest">Advertisement</span>
             </div>
-          </div>
-          
-          {/* Abstract Graphic Element */}
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1/3 aspect-square bg-green-500/10 blur-[120px] rounded-full hidden lg:block" />
+
+            {/* Trending Section */}
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
+                  <TrendingUp className="h-5 w-5 text-green-600" />
+                  Trending in Nigeria
+                </h3>
+                <div className="space-y-4">
+                  {trendingStories.length > 0 ? trendingStories.map((story, idx) => (
+                    <Link href={`/news/${story.slug}`} key={story.id} className="group block cursor-pointer">
+                      <div className="flex items-start gap-4">
+                        <span className="text-2xl font-black text-zinc-200 group-hover:text-green-200 transition-colors">
+                          0{idx + 1}
+                        </span>
+                        <div>
+                          <p className="text-sm font-bold leading-snug group-hover:text-green-700 transition-colors">
+                            {story.title_en}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] uppercase font-bold text-green-600">{story.category_slug || 'General'}</span>
+                            <span className="text-[10px] text-muted-foreground">{timeAgo(story.created_at)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  )) : (
+                    <p className="text-sm text-zinc-500">No trending stories yet.</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Ad Slot Sidebar Bottom */}
+            <div className="w-full h-64 bg-zinc-100 flex items-center justify-center border border-dashed rounded-lg border-zinc-300">
+              <span className="text-xs font-medium text-zinc-400 uppercase tracking-widest">Advertisement</span>
+            </div>
+
+          </aside>
         </div>
-      </section>
+      </div>
     </div>
   );
+}
+
+function Button({ children, variant, className }: any) {
+  const base = "px-4 py-2 rounded-md font-medium transition-colors";
+  const variants: any = {
+    primary: "bg-green-700 text-white hover:bg-green-800",
+    secondary: "bg-white text-green-900 hover:bg-green-50",
+    outline: "border border-zinc-200 hover:bg-zinc-50"
+  };
+  return <button className={`${base} ${variants[variant || 'primary']} ${className}`}>{children}</button>;
 }

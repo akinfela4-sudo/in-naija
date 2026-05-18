@@ -21,11 +21,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const categories = [
-  { name: "Politics", href: "/category/politics" },
-  { name: "Trending", href: "/category/trending" },
-  { name: "Election Map", href: "/elections" },
-  { name: "Polls", href: "/polls" },
-  { name: "Business", href: "/category/business" },
+  { name: "Home", href: "/" },
+  { name: "Politics & Power", href: "/category/politics" },
+  { name: "Naija Pulse (Trending)", href: "/category/trending" },
+  { name: "Business & Economy", href: "/category/business" },
 ];
 
 export default function Navbar() {
