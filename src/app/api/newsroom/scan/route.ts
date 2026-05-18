@@ -1,6 +1,6 @@
 import { scanNewsFeeds } from "@/lib/ai/scanner";
 import { rewriteArticle, generateThumbnail } from "@/lib/ai/rewriter";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 import { NextResponse } from "next/server";
 import { sendTelegramMessage, escapeMarkdown } from "@/lib/telegram";
 
@@ -105,41 +105,19 @@ export async function POST(request: Request) {
 
           await sendTelegramMessage(adminChatId, draftMessage, "MarkdownV2");
         }
-      } catch (articleError) {
-        console.error(`Failed processing article "${article.title}":`, articleError);
+      } catch (innerErr: any) {
+        console.error(`Failed to process article: ${article.title}`, innerErr);
       }
     }
 
     return NextResponse.json({
       success: true,
       scanned: rawArticles.length,
-      processed: results.length,
-      articles: results,
+      inserted: results.length,
+      results,
     });
-  } catch (error) {
-    console.error("News scan pipeline failed:", error);
-    return NextResponse.json(
-      { success: false, error: "Pipeline failed" },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * GET /api/newsroom/scan
- * Returns the current queue of pending articles
- */
-export async function GET(request: Request) {
-  const { data, error } = await supabase
-    .from("articles")
-    .select("id, title_en, title_pidgin, status, created_at, thumbnail_url, source_url")
-    .in("status", ["pending_approval", "draft"])
-    .order("created_at", { ascending: false })
-    .limit(20);
-
-  if (error) {
+  } catch (error: any) {
+    console.error("Scan route error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  return NextResponse.json({ articles: data });
 }
