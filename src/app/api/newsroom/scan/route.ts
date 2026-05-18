@@ -12,7 +12,7 @@ export const maxDuration = 120;
  * 1. Scans RSS feeds for trending Nigerian news
  * 2. Rewrites each article in English + Pidgin (zero plagiarism)
  * 3. Generates an AI thumbnail
- * 4. Saves as a draft pending WhatsApp approval
+ * 4. Saves as a draft pending Telegram approval
  *
  * Protected by CRON_SECRET header for Vercel Cron Jobs
  */
