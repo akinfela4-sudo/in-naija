@@ -25,6 +25,7 @@ const categories = [
   { name: "Politics & Power", href: "/category/politics" },
   { name: "Naija Pulse (Trending)", href: "/category/trending" },
   { name: "Business & Economy", href: "/category/business" },
+  { name: "Tech & Innovation", href: "/category/tech" },
 ];
 
 export default function Navbar() {

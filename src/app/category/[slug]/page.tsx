@@ -25,8 +25,13 @@ const CATEGORY_META: Record<string, { title: string; description: string; emoji:
   },
   business: {
     title: "Business & Economy",
-    description: "Fuel prices, currency rates (Dollar/Naira tracking), inflation updates, and things affecting the daily cost of living.",
+    description: "Fuel prices, currency rates (Dollar/Naira tracking), daily inflation updates, and cost of living trends.",
     emoji: "📈",
+  },
+  tech: {
+    title: "Tech & Innovation",
+    description: "Nigerian tech startups, funding rounds, fintech innovations, and digital economy news.",
+    emoji: "💻",
   },
 };
 

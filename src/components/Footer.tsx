@@ -48,6 +48,7 @@ export default function Footer() {
               <li><Link href="/category/politics" className="hover:text-green-600">Politics & Power</Link></li>
               <li><Link href="/category/trending" className="hover:text-green-600">Naija Pulse (Trending)</Link></li>
               <li><Link href="/category/business" className="hover:text-green-600">Business & Economy</Link></li>
+              <li><Link href="/category/tech" className="hover:text-green-600">Tech & Innovation</Link></li>
             </ul>
           </div>
 
