@@ -95,12 +95,13 @@ export async function POST(request: Request) {
 // ─── HANDLERS ─────────────────────────────────────────────────────────────────
 
 async function handleApprove(articleId: string, chatId: string): Promise<Response> {
+  let debugInfo: any = {};
   try {
     let article = null;
     
     // Check for exact UUID first
     if (articleId.length === 36) {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("articles")
         .update({ status: "published" })
         .eq("id", articleId)
@@ -108,16 +109,22 @@ async function handleApprove(articleId: string, chatId: string): Promise<Respons
         .select()
         .single();
       article = data;
+      if (error) debugInfo.exactError = error.message;
     }
 
-    if (!article) {
-      // Find matching pending article in JS to avoid UUID cast errors in Supabase ilike
-      const { data: pending } = await supabase
-        .from("articles")
-        .select("id")
-        .eq("status", "pending_approval");
+    // Find matching pending article in JS to avoid UUID cast errors in Supabase ilike
+    const { data: pending, error: pendingError } = await supabase
+      .from("articles")
+      .select("id")
+      .eq("status", "pending_approval");
 
-      const matched = pending?.find(a => a.id.startsWith(articleId));
+    debugInfo.pendingCount = pending?.length || 0;
+    if (pendingError) debugInfo.pendingError = pendingError.message;
+
+    if (!article && pending) {
+      const matched = pending.find(a => a.id.startsWith(articleId));
+      debugInfo.matchedId = matched ? matched.id : null;
+      
       if (matched) {
          const { data, error } = await supabase
            .from("articles")
@@ -126,8 +133,11 @@ async function handleApprove(articleId: string, chatId: string): Promise<Respons
            .select()
            .single();
            
-         if (error || !data) throw error || new Error("Failed fuzzy matched approval");
-         article = data;
+         if (error || !data) {
+           debugInfo.fuzzyUpdateError = error?.message || "No data returned";
+         } else {
+           article = data;
+         }
       }
     }
 
@@ -137,14 +147,21 @@ async function handleApprove(articleId: string, chatId: string): Promise<Respons
         `❌ Could not approve article \`${articleId}\`.\nIt may not exist or is already published.`,
         "Markdown"
       );
-      return NextResponse.json({ status: "not_found" });
+      return NextResponse.json({ 
+        status: "not_found",
+        debug: {
+          hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+          articleId,
+          ...debugInfo
+        }
+      });
     }
 
     return await distributeAndNotify(article, chatId);
-  } catch (err) {
+  } catch (err: any) {
     console.error("Approve handler error:", err);
     await sendTelegramMessage(chatId, `❌ Approval failed due to a server error. Check the logs.`);
-    return NextResponse.json({ status: "error" }, { status: 500 });
+    return NextResponse.json({ status: "error", error: err.message, debug: debugInfo }, { status: 500 });
   }
 }
 
