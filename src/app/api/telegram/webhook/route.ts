@@ -96,38 +96,42 @@ export async function POST(request: Request) {
 
 async function handleApprove(articleId: string, chatId: string): Promise<Response> {
   try {
-    const { data: article, error } = await supabase
-      .from("articles")
-      .update({ status: "published" })
-      .eq("id", articleId)
-      .eq("status", "pending_approval")
-      .select()
-      .single();
+    let article = null;
+    
+    // Check for exact UUID first
+    if (articleId.length === 36) {
+      const { data } = await supabase
+        .from("articles")
+        .update({ status: "published" })
+        .eq("id", articleId)
+        .eq("status", "pending_approval")
+        .select()
+        .single();
+      article = data;
+    }
 
-    if (error || !article) {
-      // Sometimes user might pass a partial ID. Let's try matching via ilike if exact fails
-      const { data: fuzzyMatch } = await supabase
+    if (!article) {
+      // Find matching pending article in JS to avoid UUID cast errors in Supabase ilike
+      const { data: pending } = await supabase
         .from("articles")
         .select("id")
-        .eq("status", "pending_approval")
-        .ilike("id", `${articleId}%`)
-        .single();
-        
-      if (fuzzyMatch) {
-         // Approve the fuzzy matched one
-         const { data: fuzzyArticle, error: fuzzyError } = await supabase
+        .eq("status", "pending_approval");
+
+      const matched = pending?.find(a => a.id.startsWith(articleId));
+      if (matched) {
+         const { data, error } = await supabase
            .from("articles")
            .update({ status: "published" })
-           .eq("id", fuzzyMatch.id)
+           .eq("id", matched.id)
            .select()
            .single();
            
-         if (fuzzyError || !fuzzyArticle) throw fuzzyError || new Error("Failed fuzzy match approval");
-         
-         // Continue with the fuzzy approved article
-         return await distributeAndNotify(fuzzyArticle, chatId);
+         if (error || !data) throw error || new Error("Failed fuzzy matched approval");
+         article = data;
       }
+    }
 
+    if (!article) {
       await sendTelegramMessage(
         chatId,
         `❌ Could not approve article \`${articleId}\`.\nIt may not exist or is already published.`,
@@ -179,16 +183,39 @@ async function distributeAndNotify(article: any, chatId: string): Promise<Respon
 async function handleReject(articleId: string, chatId: string): Promise<Response> {
   try {
     let targetId = articleId;
-    
-    const { data: checkData } = await supabase
-      .from("articles")
-      .select("id, title_en")
-      .ilike("id", `${articleId}%`)
-      .eq("status", "pending_approval")
-      .single();
+    let title = "";
 
-    if (checkData) {
-      targetId = checkData.id;
+    // Check exact first
+    if (articleId.length === 36) {
+      const { data } = await supabase
+        .from("articles")
+        .select("id, title_en")
+        .eq("id", articleId)
+        .eq("status", "pending_approval")
+        .single();
+      if (data) {
+        targetId = data.id;
+        title = data.title_en;
+      }
+    }
+
+    if (!title) {
+      // Find matching pending article in JS to avoid UUID cast errors in Supabase ilike
+      const { data: pending } = await supabase
+        .from("articles")
+        .select("id, title_en")
+        .eq("status", "pending_approval");
+
+      const matched = pending?.find(a => a.id.startsWith(articleId));
+      if (matched) {
+        targetId = matched.id;
+        title = matched.title_en;
+      }
+    }
+
+    if (!title) {
+      await sendTelegramMessage(chatId, `❌ Article \`${articleId}\` not found or already processed.`, "Markdown");
+      return NextResponse.json({ status: "not_found" });
     }
 
     const { error } = await supabase
@@ -197,12 +224,12 @@ async function handleReject(articleId: string, chatId: string): Promise<Response
       .eq("id", targetId)
       .eq("status", "pending_approval");
 
-    if (error || !checkData) {
-      await sendTelegramMessage(chatId, `❌ Article \`${articleId}\` not found or already processed.`, "Markdown");
+    if (error) {
+      await sendTelegramMessage(chatId, `❌ Rejection failed due to a server error.`);
     } else {
       await sendTelegramMessage(
         chatId,
-        `🗑️ *Article Rejected & Deleted*\n\n"${escapeMarkdown(checkData.title_en)}"\n\nSend /list to see remaining drafts.`,
+        `🗑️ *Article Rejected & Deleted*\n\n"${escapeMarkdown(title)}"\n\nSend /list to see remaining drafts.`,
         "MarkdownV2"
       );
     }
@@ -248,13 +275,30 @@ async function handleList(chatId: string): Promise<Response> {
 
 async function handleStatus(articleId: string, chatId: string): Promise<Response> {
   try {
-    const { data } = await supabase
-      .from("articles")
-      .select("title_en, status, created_at")
-      .ilike("id", `${articleId}%`)
-      .single();
+    let article = null;
 
-    if (!data) {
+    if (articleId.length === 36) {
+      const { data } = await supabase
+        .from("articles")
+        .select("title_en, status, created_at")
+        .eq("id", articleId)
+        .single();
+      article = data;
+    }
+
+    if (!article) {
+      // Query recent ones to find fuzzy match
+      const { data: recent } = await supabase
+        .from("articles")
+        .select("id, title_en, status, created_at")
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      const matched = recent?.find(a => a.id.startsWith(articleId));
+      article = matched;
+    }
+
+    if (!article) {
       await sendTelegramMessage(chatId, `❌ No article found matching ID \`${articleId}\`.`, "Markdown");
     } else {
       const statusEmoji: Record<string, string> = {
@@ -265,7 +309,7 @@ async function handleStatus(articleId: string, chatId: string): Promise<Response
       
       await sendTelegramMessage(
         chatId,
-        `📊 *Article Status*\n\n"${escapeMarkdown(data.title_en)}"\n\nStatus: ${statusEmoji[data.status] || "❓"} ${escapeMarkdown(data.status)}\nCreated: ${escapeMarkdown(new Date(data.created_at).toLocaleString("en-NG", { timeZone: "Africa/Lagos" }))}`,
+        `📊 *Article Status*\n\n"${escapeMarkdown(article.title_en)}"\n\nStatus: ${statusEmoji[article.status] || "❓"} ${escapeMarkdown(article.status)}\nCreated: ${escapeMarkdown(new Date(article.created_at).toLocaleString("en-NG", { timeZone: "Africa/Lagos" }))}`,
         "MarkdownV2"
       );
     }
