@@ -152,6 +152,8 @@ async function handleApprove(articleId: string, chatId: string): Promise<Respons
         debug: {
           hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
           articleId,
+          supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || "MISSING_URL",
+          supabaseKeyPrefix: (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "").slice(0, 15),
           ...debugInfo
         }
       });
