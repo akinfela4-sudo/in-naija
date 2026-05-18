@@ -2,6 +2,7 @@ import { scanNewsFeeds } from "@/lib/ai/scanner";
 import { rewriteArticle, generateThumbnail } from "@/lib/ai/rewriter";
 import { supabase } from "@/lib/supabase";
 import { NextResponse } from "next/server";
+import { sendTelegramMessage, escapeMarkdown } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -84,6 +85,26 @@ export async function POST(request: Request) {
         });
 
         console.log(`✅ Saved draft: "${rewritten.title_en}" (ID: ${saved.id})`);
+
+        // Notify the admin in Telegram of the new draft pending approval
+        const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID || "";
+        if (adminChatId) {
+          const shortId = saved.id.split("-")[0];
+          const cleanTitle = escapeMarkdown(rewritten.title_en);
+          const cleanPidgin = escapeMarkdown(rewritten.title_pidgin);
+          const cleanCategory = escapeMarkdown(rewritten.category_slug);
+          const cleanSummary = escapeMarkdown(rewritten.summary);
+
+          const draftMessage = `🔔 *New Draft Scanned & Pending!* \n\n` +
+            `📰 *Title:* ${cleanTitle}\n` +
+            `🇳🇬 *Pidgin:* ${cleanPidgin}\n` +
+            `📂 *Category:* \`${cleanCategory}\`\n` +
+            `📝 *Summary:* _${cleanSummary}_\n\n` +
+            `👉 *Approve:* /approve\\_${shortId}\n` +
+            `❌ *Reject:* /reject\\_${shortId}`;
+
+          await sendTelegramMessage(adminChatId, draftMessage, "MarkdownV2");
+        }
       } catch (articleError) {
         console.error(`Failed processing article "${article.title}":`, articleError);
       }

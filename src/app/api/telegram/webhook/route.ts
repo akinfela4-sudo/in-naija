@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { distributeToAllPlatforms } from "@/lib/social/distributor";
+import { sendTelegramMessage, escapeMarkdown } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
 
@@ -273,54 +274,5 @@ async function handleStatus(articleId: string, chatId: string): Promise<Response
   } catch (err) {
     console.error("Status handler error:", err);
     return NextResponse.json({ status: "error" }, { status: 500 });
-  }
-}
-
-// ─── TELEGRAM MESSAGE SENDER ───────────────────────────────────────────────────
-
-/**
- * Escapes characters for Telegram MarkdownV2
- */
-function escapeMarkdown(text: string): string {
-  if (!text) return "";
-  // Characters that need escaping in MarkdownV2: _ * [ ] ( ) ~ ` > # + - = | { } . !
-  return text.replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&');
-}
-
-/**
- * Sends a Telegram message to a specific chat ID
- */
-async function sendTelegramMessage(chatId: string, text: string, parseMode?: "Markdown" | "MarkdownV2" | "HTML"): Promise<void> {
-  if (!TELEGRAM_BOT_TOKEN) {
-    console.warn("Telegram bot token not set — skipping message send.");
-    return;
-  }
-
-  const apiUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-  
-  const payload: any = {
-    chat_id: chatId,
-    text: text,
-  };
-  
-  if (parseMode) {
-    payload.parse_mode = parseMode;
-  }
-
-  try {
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Telegram send failed (${response.status}):`, errorText);
-    }
-  } catch (err) {
-    console.error("Telegram request failed:", err);
   }
 }

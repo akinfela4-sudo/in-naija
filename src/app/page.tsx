@@ -1,17 +1,21 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, Clock, ArrowRight } from "lucide-react";
+import { TrendingUp, Clock, ArrowRight, Map } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { cookies } from "next/headers";
 
 // Export page config
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
+  const cookieStore = await cookies();
+  const lang = cookieStore.get("lang")?.value || "en";
+
   // Fetch live published articles
   const { data: articles, error } = await supabase
     .from("articles")
-    .select("id, title_en, title_pidgin, slug, category_slug, thumbnail_url, created_at, views_count, is_breaking, content_en")
+    .select("id, title_en, title_pidgin, slug, category_slug, thumbnail_url, created_at, views_count, is_breaking, content_en, content_pidgin")
     .eq("status", "published")
     .order("created_at", { ascending: false })
     .limit(10);
@@ -21,10 +25,12 @@ export default async function Home() {
   // Pick featured (latest) and trending (by views)
   const featuredNews = safeArticles[0] || {
     title_en: "No published articles yet",
+    title_pidgin: "No published articles yet",
     category_slug: "updates",
     created_at: new Date().toISOString(),
     thumbnail_url: "https://images.unsplash.com/photo-1518458084722-6a3976c33c40?auto=format&fit=crop&q=80&w=800",
     content_en: "Run a scan from the admin dashboard to populate the newsroom...",
+    content_pidgin: "Run a scan from the admin dashboard to populate the newsroom...",
     slug: "#",
   };
 
@@ -57,7 +63,7 @@ export default async function Home() {
           <div className="container mx-auto px-4 flex items-center gap-4">
             <Badge className="bg-red-600 animate-pulse shrink-0">BREAKING</Badge>
             <p className="text-sm font-medium truncate">
-              {breakingNews.title_en}
+              {lang === "pidgin" ? (breakingNews.title_pidgin || breakingNews.title_en) : breakingNews.title_en}
             </p>
           </div>
         </div>
@@ -83,10 +89,10 @@ export default async function Home() {
                     <div className="absolute bottom-0 p-6 text-white">
                       <Badge className="mb-3 bg-green-600 capitalize">{featuredNews.category_slug || 'General'}</Badge>
                       <h2 className="text-2xl md:text-4xl font-bold mb-3 leading-tight">
-                        {featuredNews.title_en}
+                        {lang === "pidgin" ? (featuredNews.title_pidgin || featuredNews.title_en) : featuredNews.title_en}
                       </h2>
                       <p className="text-zinc-200 line-clamp-2 text-sm md:text-base mb-4">
-                        {featuredNews.content_en?.substring(0, 150)}...
+                        {lang === "pidgin" ? (featuredNews.content_pidgin || featuredNews.content_en)?.substring(0, 150) : featuredNews.content_en?.substring(0, 150)}...
                       </p>
                       <div className="flex items-center gap-4 text-xs">
                         <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {timeAgo(featuredNews.created_at)}</span>
@@ -115,7 +121,7 @@ export default async function Home() {
                       <CardContent className="p-4">
                         <Badge variant="outline" className="mb-2 capitalize">{story.category_slug || 'Update'}</Badge>
                         <h4 className="font-bold leading-tight mb-2 hover:text-green-700 cursor-pointer">
-                          {story.title_en}
+                          {lang === "pidgin" ? (story.title_pidgin || story.title_en) : story.title_en}
                         </h4>
                         <p className="text-xs text-muted-foreground">{timeAgo(story.created_at)}</p>
                       </CardContent>
@@ -150,7 +156,7 @@ export default async function Home() {
                         </span>
                         <div>
                           <p className="text-sm font-bold leading-snug group-hover:text-green-700 transition-colors">
-                            {story.title_en}
+                            {lang === "pidgin" ? (story.title_pidgin || story.title_en) : story.title_en}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-[10px] uppercase font-bold text-green-600">{story.category_slug || 'General'}</span>

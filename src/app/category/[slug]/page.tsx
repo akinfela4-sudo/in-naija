@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Clock, TrendingUp, Filter } from "lucide-react";
 import type { Metadata } from "next";
 import { supabase } from "@/lib/supabase";
+import { cookies } from "next/headers";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -46,6 +47,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CategoryPage({ params }: Props) {
   const { slug } = await params;
+  const cookieStore = await cookies();
+  const lang = cookieStore.get("lang")?.value || "en";
   const meta = CATEGORY_META[slug] || {
     title: slug.charAt(0).toUpperCase() + slug.slice(1),
     description: `Latest ${slug} news from Nigeria.`,
@@ -55,7 +58,7 @@ export default async function CategoryPage({ params }: Props) {
   // Fetch articles for this category
   const { data: articles, error } = await supabase
     .from("articles")
-    .select("id, title_en, slug, thumbnail_url, created_at, views_count, is_breaking")
+    .select("id, title_en, title_pidgin, slug, thumbnail_url, created_at, views_count, is_breaking")
     .eq("status", "published")
     .eq("category_slug", slug)
     .order("created_at", { ascending: false })
@@ -81,7 +84,7 @@ export default async function CategoryPage({ params }: Props) {
           <div className="flex items-center gap-4">
             <span className="text-5xl">{meta.emoji}</span>
             <div>
-              <h1 className="text-3xl font-black">{meta.title}</h1>
+              <h1 className="text-3xl font-black">{meta.meta ? meta.meta.title : meta.title}</h1>
               <p className="text-green-100 mt-1 max-w-xl text-sm">{meta.description}</p>
             </div>
           </div>
@@ -123,7 +126,7 @@ export default async function CategoryPage({ params }: Props) {
                           <Badge className="bg-red-600 mb-2 animate-pulse">BREAKING</Badge>
                         )}
                         <h2 className="text-xl md:text-2xl font-black leading-snug group-hover:text-green-200 transition-colors">
-                          {heroArticle.title_en}
+                          {lang === "pidgin" ? (heroArticle.title_pidgin || heroArticle.title_en) : heroArticle.title_en}
                         </h2>
                         <div className="flex items-center gap-3 mt-2 text-xs text-zinc-300">
                           <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{timeAgo(heroArticle.created_at)}</span>
@@ -147,7 +150,7 @@ export default async function CategoryPage({ params }: Props) {
                         </div>
                         <div className="flex-grow">
                           <h3 className="font-bold leading-snug text-sm group-hover:text-green-700 transition-colors">
-                            {article.title_en}
+                            {lang === "pidgin" ? (article.title_pidgin || article.title_en) : article.title_en}
                           </h3>
                           <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -30,6 +31,22 @@ const categories = [
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [lang, setLang] = useState<"en" | "pidgin">("en");
+  const router = useRouter();
+
+  useEffect(() => {
+    const match = document.cookie.match(/(?:^|; )lang=([^;]*)/);
+    const savedLang = match ? match[1] : "en";
+    if (savedLang === "pidgin" || savedLang === "en") {
+      setLang(savedLang);
+    }
+  }, []);
+
+  const handleLanguageChange = (newLang: "en" | "pidgin") => {
+    document.cookie = `lang=${newLang}; path=/; max-age=31536000; SameSite=Lax`;
+    setLang(newLang);
+    router.refresh();
+  };
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -71,11 +88,11 @@ export default function Navbar() {
             <DropdownMenu>
               <DropdownMenuTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3 gap-2 text-sm">
                 <Globe className="h-4 w-4" />
-                <span>English</span>
+                <span>{lang === "en" ? "English" : "Pidgin"}</span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>English (Standard)</DropdownMenuItem>
-                <DropdownMenuItem>In-Naija Pidgin</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleLanguageChange("en")}>English (Standard)</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleLanguageChange("pidgin")}>In-Naija Pidgin</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -118,7 +135,13 @@ export default function Navbar() {
             ))}
           </div>
           <div className="flex items-center justify-between pt-4">
-             <Button variant="outline" className="w-[48%]">Pidgin Mode</Button>
+             <Button 
+               variant={lang === "pidgin" ? "default" : "outline"} 
+               className={`w-[48%] ${lang === "pidgin" ? "bg-green-700 hover:bg-green-800 text-white" : ""}`}
+               onClick={() => handleLanguageChange(lang === "en" ? "pidgin" : "en")}
+             >
+               {lang === "pidgin" ? "English Mode" : "Pidgin Mode"}
+             </Button>
              <Button className="w-[48%] bg-green-700">Sign In</Button>
           </div>
         </div>
