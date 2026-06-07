@@ -121,12 +121,13 @@ export async function generateThumbnail(title_en: string): Promise<string | null
  * Automatically generates a news article based on a topic or headline prompt
  */
 export async function generateAIArticle(prompt: string): Promise<RewriteResult> {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "system",
-        content: `You are the Chief AI Editor of In-Naija, Nigeria's leading digital news platform. 
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `You are the Chief AI Editor of In-Naija, Nigeria's leading digital news platform. 
 Your job is to write a news article from scratch based on a topic or headline prompt provided by the user.
 Write a comprehensive, professional, zero-plagiarism news story in two versions:
 1. Standard English (professional journalism style, 5-6 paragraphs, detailed background, key events, at least 400-500 words).
@@ -144,16 +145,36 @@ Output ONLY valid JSON with this exact schema:
   "category_slug": "Must be one of: politics, business, tech, entertainment, sports, trending",
   "summary": "One sentence summary for social media sharing (max 140 chars)"
 }`,
-      },
-      {
-        role: "user",
-        content: `Write a news story about: "${prompt}"`,
-      },
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.7,
-  });
+        },
+        {
+          role: "user",
+          content: `Write a news story about: "${prompt}"`,
+        },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.7,
+    });
 
-  const result = JSON.parse(response.choices[0].message.content || "{}");
-  return result as RewriteResult;
+    const result = JSON.parse(response.choices[0].message.content || "{}");
+    return result as RewriteResult;
+  } catch (error: any) {
+    console.error("AI Article generation failed:", error);
+    if (
+      error?.status === 429 || 
+      error?.message?.includes("quota") || 
+      error?.message?.includes("billing") ||
+      error?.message?.includes("exceeded your current quota")
+    ) {
+      return {
+        title_en: `Breaking: ${prompt}`,
+        title_pidgin: `Oya look: ${prompt}`,
+        content_en: `This is a high-quality fallback draft generated for "${prompt}" because the configured OpenAI API key has exceeded its billing quota.\n\nTo restore full AI writing capabilities, please update the OpenAI API key and billing details in your settings. Once configured, the AI will write comprehensive, multi-paragraph news stories from scratch.`,
+        content_pidgin: `We bring you standard fallback gist on top "${prompt}" as our OpenAI API key don get billing/quota issue.\n\nAbeg update your OpenAI API key and billing details inside settings make AI for begin write full beta news for you again.`,
+        slug: prompt.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, ""),
+        category_slug: "trending",
+        summary: `Fallback article created for: ${prompt}`
+      };
+    }
+    throw error;
+  }
 }
