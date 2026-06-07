@@ -32,14 +32,14 @@ export async function rewriteArticle(
         content: `You are the Chief AI Editor of In-Naija, Nigeria's leading digital news platform. 
 Your job is to rewrite news articles into two completely original, zero-plagiarism versions.
 You MUST rephrase everything in your own words — never copy sentences from the source.
-Be factual, engaging, and Nigeria-specific in your framing.
+Be factual, comprehensive, highly detailed, and engaging.
 
 Output ONLY valid JSON with this exact schema:
 {
   "title_en": "Compelling English headline (max 90 chars)",
-  "content_en": "Full article in Standard English, 3-4 paragraphs, professional journalism style. Use Nigerian context and examples.",
+  "content_en": "Comprehensive and detailed news article in Standard English. It must be highly descriptive, thorough, and run for 5 to 6 full paragraphs (at least 400-500 words). Include all core background details, key events, explanations, and implications for Nigeria. Maintain a high-quality professional journalism standard.",
   "title_pidgin": "Pidgin headline that grabs attention (max 90 chars)",
-  "content_pidgin": "Full article in authentic Nigerian Pidgin English. Use phrases like 'e don happen', 'as e dey go', 'oya', 'wahala', 'oga', 'naija', 'dem', 'e be like say'. Keep it natural, not forced. 3-4 paragraphs.",
+  "content_pidgin": "Comprehensive and detailed news article in authentic Nigerian Pidgin English. Write 5 to 6 full paragraphs (at least 350-450 words) filled with details. Use natural phrases like 'e don happen', 'as e dey go', 'oya', 'wahala', 'oga', 'naija', 'dem', 'e be like say'. Explain all the deep details of the event so that the reader gets full understanding of the story.",
   "slug": "url-friendly-slug-from-title-max-60-chars",
   "category_slug": "Must be one of: politics, business, trending, tech",
   "summary": "One sentence summary for social media sharing (max 140 chars)"
@@ -77,18 +77,23 @@ export async function generateThumbnailPrompt(title_en: string): Promise<string>
       {
         role: "system",
         content:
-          "You create concise DALL-E image prompts for Nigerian news thumbnails. The style should be: photorealistic, bold, editorial. Include Nigerian visual elements where relevant. Max 200 chars.",
+          "You are a photo editor creating high-quality, relevant editorial photography prompts for Nigerian news thumbnails. " +
+          "Your prompt MUST be directly related to the core subject of the headline. " +
+          "If the headline mentions a specific musician (like Wizkid), politician (like Tinubu), or organization (like INEC), describe a photorealistic scene depicting that person or entity (or an actor resembling them in a realistic Nigerian setup, e.g. performing on a grand stage or speaking at an official INEC podium with official banners). " +
+          "Avoid generic placeholders or unrelated symbolic elements (like bottles, random nature, or abstract shapes). " +
+          "The style must be: photorealistic, documentary, professional editorial news photo. Max 200 characters.",
       },
       {
         role: "user",
-        content: `Create a thumbnail prompt for this headline: "${title_en}"`,
+        content: `Create an editorial thumbnail photo prompt for: "${title_en}"`,
       },
     ],
-    max_tokens: 100,
+    max_tokens: 150,
   });
 
   return response.choices[0].message.content || `Editorial news photo for: ${title_en}`;
 }
+
 
 /**
  * Generates an AI thumbnail image via DALL-E 3
@@ -110,4 +115,45 @@ export async function generateThumbnail(title_en: string): Promise<string | null
     console.error("Thumbnail generation failed:", error);
     return null;
   }
+}
+
+/**
+ * Automatically generates a news article based on a topic or headline prompt
+ */
+export async function generateAIArticle(prompt: string): Promise<RewriteResult> {
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o",
+    messages: [
+      {
+        role: "system",
+        content: `You are the Chief AI Editor of In-Naija, Nigeria's leading digital news platform. 
+Your job is to write a news article from scratch based on a topic or headline prompt provided by the user.
+Write a comprehensive, professional, zero-plagiarism news story in two versions:
+1. Standard English (professional journalism style, 5-6 paragraphs, detailed background, key events, at least 400-500 words).
+2. Nigerian Pidgin (authentic In-Naija voice, 5-6 paragraphs, natural pidgin slang like 'e don happen', 'as e dey go', 'oya', 'wahala', 'dem', 'e be like say', at least 350-450 words).
+
+Choose the most appropriate category_slug matching the topic.
+
+Output ONLY valid JSON with this exact schema:
+{
+  "title_en": "Compelling English headline (max 90 chars)",
+  "content_en": "Comprehensive and detailed news article in Standard English. It must be highly descriptive, thorough, and run for 5 to 6 full paragraphs (at least 400-500 words). Include core background details, key events, and implications for Nigeria.",
+  "title_pidgin": "Pidgin headline that grabs attention (max 90 chars)",
+  "content_pidgin": "Comprehensive and detailed news article in authentic Nigerian Pidgin English. Write 5 to 6 full paragraphs (at least 350-450 words) filled with details. Use natural pidgin flow.",
+  "slug": "url-friendly-slug-from-title-max-60-chars",
+  "category_slug": "Must be one of: politics, business, tech, entertainment, sports, trending",
+  "summary": "One sentence summary for social media sharing (max 140 chars)"
+}`,
+      },
+      {
+        role: "user",
+        content: `Write a news story about: "${prompt}"`,
+      },
+    ],
+    response_format: { type: "json_object" },
+    temperature: 0.7,
+  });
+
+  const result = JSON.parse(response.choices[0].message.content || "{}");
+  return result as RewriteResult;
 }

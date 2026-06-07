@@ -1,6 +1,7 @@
 import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 import { distributeToAllPlatforms } from "@/lib/social/distributor";
 import { NextResponse } from "next/server";
+import { generateAIArticle } from "@/lib/ai/rewriter";
 
 export const dynamic = "force-dynamic";
 
@@ -88,6 +89,16 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { action } = body;
+
+    // Action D: Generate AI Article
+    if (action === "generate_ai_article") {
+      const { prompt } = body;
+      if (!prompt) {
+        return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
+      }
+      const generated = await generateAIArticle(prompt);
+      return NextResponse.json({ success: true, article: generated });
+    }
 
     // Action A: Create manual article
     if (action === "create_article") {
