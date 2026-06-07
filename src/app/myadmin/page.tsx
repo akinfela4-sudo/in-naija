@@ -112,13 +112,13 @@ export default function MyAdminPage() {
     setLoading(true);
     try {
       // 1. Fetch pending queue
-      const res = await fetch("/api/newsroom/scan");
+      const res = await fetch("/api/newsroom/scan", { cache: "no-store" });
       const data = await res.json();
       const pendingArticles = data.articles || [];
       setArticles(pendingArticles);
 
       // 2. Fetch myadmin analytics, popular, and polls
-      const adminRes = await fetch("/api/myadmin");
+      const adminRes = await fetch("/api/myadmin", { cache: "no-store" });
       const adminData = await adminRes.json();
       if (adminData.success) {
         setStats(adminData.stats || { draft: 0, pending_approval: 0, published: 0, total_views: 0 });
