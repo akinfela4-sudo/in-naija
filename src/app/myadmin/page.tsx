@@ -737,6 +737,9 @@ export default function MyAdminPage() {
                         </button>
                       </div>
 
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Popular Articles Tracker */}
@@ -973,7 +976,7 @@ export default function MyAdminPage() {
                   <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl">
                     <div>
                       <p className="text-xs font-bold text-slate-700">Auto-Tweet to X (Twitter)</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">Automatically format and tweet new articles using Twitter OAuth HMAC-SHA1 signatures on publish.</p>
+                      <p className="text-[11px] text-slate-450 mt-0.5">Automatically format and tweet new articles using Twitter OAuth HMAC-SHA1 signatures on publish.</p>
                     </div>
                     <input
                       type="checkbox"
@@ -986,7 +989,7 @@ export default function MyAdminPage() {
                   <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl">
                     <div>
                       <p className="text-xs font-bold text-slate-700">Auto-Broadcast to Telegram Channel</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">Send a stylized news flash with both English and Pidgin copies to the official Telegram channel.</p>
+                      <p className="text-[11px] text-slate-450 mt-0.5">Send a stylized news flash with both English and Pidgin copies to the official Telegram channel.</p>
                     </div>
                     <input
                       type="checkbox"
