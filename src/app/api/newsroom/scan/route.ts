@@ -2,7 +2,7 @@ import { scanNewsFeeds } from "@/lib/ai/scanner";
 import { rewriteArticle, generateThumbnail } from "@/lib/ai/rewriter";
 import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 import { NextResponse } from "next/server";
-import { sendTelegramMessage, escapeMarkdown } from "@/lib/telegram";
+import { sendTelegramMessage, escapeMarkdown, TELEGRAM_ADMIN_CHAT_ID } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
         console.log(`✅ Saved draft: "${rewritten.title_en}" (ID: ${saved.id})`);
 
         // Notify the admin in Telegram of the new draft pending approval
-        const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID || "";
+        const adminChatId = TELEGRAM_ADMIN_CHAT_ID;
         if (adminChatId) {
           const shortId = saved.id.split("-")[0];
           const cleanTitle = escapeMarkdown(rewritten.title_en);
@@ -105,19 +105,41 @@ export async function POST(request: Request) {
 
           await sendTelegramMessage(adminChatId, draftMessage, "MarkdownV2");
         }
-      } catch (innerErr: any) {
-        console.error(`Failed to process article: ${article.title}`, innerErr);
+      } catch (articleError) {
+        console.error(`Failed processing article "${article.title}":`, articleError);
       }
     }
 
     return NextResponse.json({
       success: true,
       scanned: rawArticles.length,
-      inserted: results.length,
-      results,
+      processed: results.length,
+      articles: results,
     });
-  } catch (error: any) {
-    console.error("Scan route error:", error);
+  } catch (error) {
+    console.error("News scan pipeline failed:", error);
+    return NextResponse.json(
+      { success: false, error: "Pipeline failed" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * GET /api/newsroom/scan
+ * Returns the current queue of pending articles
+ */
+export async function GET(request: Request) {
+  const { data, error } = await supabase
+    .from("articles")
+    .select("id, title_en, title_pidgin, content_en, content_pidgin, status, created_at, thumbnail_url, source_url")
+    .in("status", ["pending_approval", "draft"])
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  return NextResponse.json({ articles: data });
 }
